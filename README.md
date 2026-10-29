@@ -51,13 +51,6 @@ bash /tmp/tv-wifi-install.sh
 
 L’installateur choisit la bonne version, vérifie le téléchargement et installe l’application dans le compte utilisateur. Il **ne demande aucune saisie interactive**, n’installe pas de pilote et ne lance pas le partage. Si un outil manque, consultez le guide ci-dessus.
 
-## À savoir avant votre cours
-
-- La TV doit accepter la réception vidéo **DLNA** : c’est la fonction utilisée pour recevoir l’image. Toutes les TV ne sont pas compatibles ; ce programme ne remplace pas AirPlay ou Chromecast.
-- Il peut y avoir quelques secondes de retard entre l’ordinateur et la TV.
-- Tout l’écran est partagé. Aucune image n’est enregistrée ; le flux local n’est pas chiffré.
-- La chaîne vidéo Linux a été utilisée en conditions réelles. **La version Mac reste à valider sur un vrai Mac.**
-
 <details>
 <summary>Sources et tests, pour les développeurs</summary>
 

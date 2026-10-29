@@ -47,8 +47,11 @@ def build(destination=None):
     # Liste fermée : aucun cache, état utilisateur ou artefact d'un ancien build.
     files = [*sorted(resources.glob('*.py')), executable, executable.parent.parent/'Info.plist',
              staging/'LIRE-MOI.txt', installer, launcher, python_launcher]
+    for path in files:
+        path.chmod(0o755 if path in {executable, installer, launcher, python_launcher} else 0o644)
     manifest = {str(path.relative_to(staging)): hashlib.sha256(path.read_bytes()).hexdigest() for path in files}
     (staging/'SHA256.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+'\n')
+    (staging/'SHA256.json').chmod(0o644)
     files.append(staging/'SHA256.json')
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_suffix('.zip.tmp')

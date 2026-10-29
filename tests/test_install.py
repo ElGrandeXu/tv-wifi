@@ -148,7 +148,7 @@ output.write_bytes(data)
                 self.assertIn('dangereux', result.stderr)
                 self.assertFalse(self.prefix.exists())
 
-    def test_foreign_current_and_symlinked_versions_are_preserved(self):
+    def test_foreign_current_is_preserved(self):
         self.assertEqual(self.run_installer('--no-shortcut').returncode, 0)
         current = self.prefix/'current'
         current.unlink()

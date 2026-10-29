@@ -53,6 +53,9 @@ def build_deb(dist):
             'Recommends: gstreamer1.0-pipewire, xdg-desktop-portal, pulseaudio-utils, gstreamer1.0-libav\n'
             'Description: Screen sharing to a DLNA television with optional system audio\n'
             ' X11 or consent-based Wayland capture, H.264/MPEG-TS. No GPU driver required.\n')
+        # Le paquet système doit rester lisible même avec un umask de build privé.
+        for path in [package, *package.rglob('*')]:
+            path.chmod(0o755 if path.is_dir() or path == binary else 0o644)
         result = dist/f'tv-wifi_{VERSION}_all.deb'
         subprocess.run(['dpkg-deb', '--root-owner-group', '--build', str(package), str(result)], check=True)
         return result

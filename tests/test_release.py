@@ -1,6 +1,7 @@
 """Cohérence du manifeste, des versions et des paquets réellement construits."""
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -34,7 +35,8 @@ class ReleaseTests(unittest.TestCase):
 
     def test_built_archives_include_common_engine_and_matching_checksums(self):
         result = subprocess.run([sys.executable, str(ROOT/'build_release.py')],
-                                capture_output=True, text=True, timeout=30)
+                                capture_output=True, text=True, timeout=30,
+                                preexec_fn=lambda: os.umask(0o077))
         self.assertEqual(result.returncode, 0, result.stderr)
         dist = ROOT/'dist'
         for line in (dist/'SHA256SUMS').read_text().splitlines():

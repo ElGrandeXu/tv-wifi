@@ -1,0 +1,28 @@
+{
+  "$schema": "./agent.schema.json",
+  "format_version": 1,
+  "name": "tv-wifi",
+  "version": "1.1.0",
+  "repository": "https://github.com/ElGrandeXu/tv-wifi",
+  "installation_guide": "INSTALL_LLM.md",
+  "security_guide": "SECURITY.md",
+  "release": "https://github.com/ElGrandeXu/tv-wifi/releases/tag/v1.1.0",
+  "entrypoints": {
+    "linux": ["python3", "linux/tv_wifi.py"],
+    "macos": ["python3", "macos/tv_wifi_macos.py"]
+  },
+  "diagnostics_argument": "--diagnose",
+  "capabilities": {
+    "linux": ["x11", "wayland-screencast-portal", "pipewire", "h264-nvenc-or-x264", "optional-output-monitor-audio"],
+    "macos": ["avfoundation", "videotoolbox", "optional-blackhole-audio"],
+    "receiver": ["dlna-avtransport", "http-mpegts", "h264", "optional-aac"]
+  },
+  "boundaries": {
+    "auto_start_sharing": false,
+    "physical_microphone": false,
+    "requires_admin_for_user_install": false,
+    "may_change_drivers_or_security": false,
+    "may_change_audio_routing": false,
+    "requires_explicit_user_capture_action": true
+  }
+}

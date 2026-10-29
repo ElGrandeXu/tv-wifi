@@ -7,8 +7,10 @@ import signal
 import sys
 import threading
 
+if (Path(__file__).resolve().parents[1] / 'common').is_dir():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'common'))
 import dlna
-from mac_backend import Controller, list_screens, request_screen_permission
+from mac_backend import Controller, list_screens, list_audio, request_screen_permission
 
 
 def main():
@@ -35,7 +37,7 @@ def main():
     content.columnconfigure(0, weight=1)
     ttk.Label(content, text='Votre écran sur la TV', font=('Helvetica', 18, 'bold')).grid(
         row=0, column=0, columnspan=2, sticky='w', pady=(0, 8))
-    ttk.Label(content, text='Full HD 1080p · 30 images/s · Sans son').grid(
+    ttk.Label(content, text='Vidéo H.264 · Son en option via BlackHole').grid(
         row=1, column=0, columnspan=2, sticky='w', pady=(0, 16))
     tv_choice = ttk.Combobox(content, state='readonly', width=37)
     tv_choice.grid(row=2, column=0, sticky='ew', padx=(0, 8))
@@ -49,20 +51,29 @@ def main():
     ttk.Label(content, text='Écran à partager :').grid(row=5, column=0, sticky='w', pady=(12, 3))
     screen_choice = ttk.Combobox(content, state='readonly')
     screen_choice.grid(row=6, column=0, columnspan=2, sticky='ew')
+    ttk.Label(content, text='Son :').grid(row=7, column=0, sticky='w', pady=(12, 3))
+    audio_choice = ttk.Combobox(content, state='readonly', values=['Sans son'])
+    audio_choice.current(0)
+    audio_choice.grid(row=8, column=0, columnspan=2, sticky='ew')
+    profile_choice = ttk.Combobox(content, state='readonly', values=['Full HD 1080p', '720p — réseau lent'])
+    profile_choice.current(0)
+    profile_choice.grid(row=9, column=0, columnspan=2, sticky='ew', pady=(8, 0))
     enabled = tk.BooleanVar(value=False)
     toggle = ttk.Checkbutton(content, text='Partager mon écran', variable=enabled)
-    toggle.grid(row=7, column=0, columnspan=2, sticky='w', pady=15)
+    toggle.grid(row=10, column=0, columnspan=2, sticky='w', pady=15)
     status = tk.StringVar(value='Recherche des TV et des écrans…')
     ttk.Label(content, textvariable=status, wraplength=495).grid(
-        row=8, column=0, columnspan=2, sticky='w')
+        row=11, column=0, columnspan=2, sticky='w')
     ttk.Label(content, text='Même réseau que la TV · Plusieurs secondes de décalage possibles.\n'
-              'Tout l’écran est partagé. Fermer la fenêtre coupe la diffusion.',
+              'Tout l’écran est partagé. Fermer la fenêtre coupe la diffusion.\n'
+              'Pour le son : routez la sortie du Mac vers BlackHole (guide fourni).',
               foreground='#666666', wraplength=495).grid(
-        row=9, column=0, columnspan=2, sticky='w', pady=(14, 0))
+        row=12, column=0, columnspan=2, sticky='w', pady=(14, 0))
 
     controller = Controller()
     messages = queue.Queue()
     known, found, screens = [], [], []
+    audio_devices = []
     closing = False
     searching = False
     search_cancel = threading.Event()
@@ -78,6 +89,8 @@ def main():
         entry.configure(state='normal' if idle else 'disabled')
         tv_choice.configure(state='readonly' if idle else 'disabled')
         screen_choice.configure(state='readonly' if idle else 'disabled')
+        audio_choice.configure(state='readonly' if idle else 'disabled')
+        profile_choice.configure(state='readonly' if idle else 'disabled')
         refresh.configure(state='normal' if idle and not searching else 'disabled')
         toggle.configure(state='disabled' if controller.state == 'disconnecting' or (idle and not screens) else 'normal')
 
@@ -106,6 +119,7 @@ def main():
     def screen_search():
         try:
             messages.put(('screens', list_screens()))
+            messages.put(('audio', list_audio()))
         except Exception as error:
             messages.put(('screen_error', str(error)))
 
@@ -123,8 +137,11 @@ def main():
                 raise dlna.TVError('Choisissez l’écran à partager.')
             if not request_screen_permission():
                 raise dlna.TVError('Autorisez l’enregistrement de l’écran dans les réglages du Mac, '
-                                   'puis relancez TV Wi-Fi. Aucun son n’est demandé.')
-            controller.connect(ip.get(), screens[index][0], list(known))
+                                   'puis relancez TV Wi-Fi.')
+            audio_index = audio_choice.current() - 1
+            audio = audio_devices[audio_index] if 0 <= audio_index < len(audio_devices) else None
+            profile = '720p' if profile_choice.current() == 1 else '1080p'
+            controller.connect(ip.get(), screens[index][0], list(known), audio, profile)
             update_controls()
         except Exception as error:
             enabled.set(False)
@@ -146,7 +163,7 @@ def main():
     signal.signal(signal.SIGINT, lambda *_: close())
 
     def poll():
-        nonlocal searching, found, known, screens
+        nonlocal searching, found, known, screens, audio_devices
         try:
             while True:
                 event = messages.get_nowait()
@@ -159,6 +176,9 @@ def main():
                     if controller.state == 'idle' and screens:
                         status.set(f'{len(found)} TV disponible(s). Choisissez celle de votre salle.'
                                    if found else 'Aucune TV détectée. Essayez son IP ou vérifiez le réseau local.')
+                elif event[0] == 'audio':
+                    audio_devices = event[1]
+                    audio_choice.configure(values=['Sans son'] + audio_devices)
                 elif event[0] == 'screens':
                     screens = event[1]
                     screen_choice.configure(values=[label for name, label in screens])
@@ -195,4 +215,9 @@ def main():
 
 
 if __name__ == '__main__':
+    if sys.argv[1:] == ['--diagnose']:
+        import json
+        from mac_backend import diagnostics
+        print(json.dumps(diagnostics(), ensure_ascii=False, indent=2))
+        raise SystemExit(0)
     raise SystemExit(main())

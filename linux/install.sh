@@ -6,8 +6,8 @@ if ! /usr/bin/python3 -c 'import gi; gi.require_version("Gtk", "3.0"); from gi.r
     echo 'Python 3, PyGObject et GTK 3 sont nécessaires. Consultez linux/README.md.' >&2
     exit 1
 fi
-if ! command -v gst-inspect-1.0 >/dev/null 2>&1 || ! gst-inspect-1.0 nvcudah264enc >/dev/null 2>&1; then
-    echo 'GStreamer et son encodeur NVIDIA nvcudah264enc sont nécessaires. Consultez le guide Linux.' >&2
+if ! command -v gst-launch-1.0 >/dev/null 2>&1; then
+    echo 'GStreamer est nécessaire. Consultez le guide Linux.' >&2
     exit 1
 fi
 /usr/bin/python3 - "$SCRIPT_DIR" <<'PY'
@@ -29,7 +29,7 @@ for char in ['\\', '"', '`', '$']:
     argument = argument.replace(char, '\\'+char)
 launcher = folder/'TV Wi-Fi.desktop'
 launcher.write_text('[Desktop Entry]\nVersion=1.0\nType=Application\nName=TV Wi-Fi\n'
-                    'Comment=Partager son écran en Full HD, sans son\n'
+                    'Comment=Partager son écran sur une TV, avec son optionnel\n'
                     'Exec=/usr/bin/python3 "'+argument+'"\n'
                     'Icon=video-display\nTerminal=false\nCategories=AudioVideo;\n')
 launcher.chmod(0o755)

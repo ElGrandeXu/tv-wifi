@@ -1,67 +1,66 @@
 # TV Wi-Fi
 
-**Affichez l’écran de votre ordinateur sur la TV de votre salle, sans câble HDMI.**
-
-L’image est en Full HD, **sans son**. L’ordinateur et la TV doivent être sur le même réseau.
-
-## Comment ça marche ?
+**Votre écran sur la TV de la salle, sans câble HDMI.**
 
 1. Ouvrez **TV Wi-Fi**.
-2. Choisissez votre TV dans la liste, ou entrez son adresse IP si vous la connaissez.
-3. Activez le partage. Pour arrêter, désactivez le bouton ou fermez la fenêtre.
+2. Choisissez la TV, ou saisissez son adresse IP.
+3. Activez le partage. Désactivez-le ou fermez la fenêtre pour arrêter.
 
-## Installer avec votre assistant IA / LLM
+La TV doit recevoir la vidéo **DLNA** sur le même réseau. Ce n’est pas un émetteur AirPlay, Chromecast ou Miracast. Plusieurs secondes de décalage restent possibles : adapté aux cours et présentations, pas aux jeux ou visioconférences. Aucune connexion automatique.
 
-**Donnez le lien de ce dépôt à votre assistant et copiez ce message :**
+## Télécharger
 
-```text
-Installe TV Wi-Fi sur mon ordinateur depuis https://github.com/ElGrandeXu/tv-wifi.
-Lis le README et INSTALL_LLM.md, détecte mon système, installe les prérequis
-et utilise l’installateur prévu. Ouvre ensuite l’application, sans lancer
-le partage d’écran à ma place. Guide-moi pour les autorisations nécessaires.
-Ne modifie pas mes pilotes ni mes protections de sécurité.
-```
+**[Version 1.1.0 : téléchargements et SHA256SUMS](https://github.com/ElGrandeXu/tv-wifi/releases/tag/v1.1.0)**
 
-Votre assistant doit pouvoir exécuter des commandes sur votre ordinateur. Sinon, il peut vous guider pas à pas.
+| Votre ordinateur | Paquet | Fonctionnement |
+| --- | --- | --- |
+| Ubuntu / Mint / Debian récents | `tv-wifi_1.1.0_all.deb` ou `TV-WiFi-Linux.zip` | X11 ; Wayland via portail ScreenCast/PipeWire. NVIDIA **facultative** : repli logiciel x264 sur Intel/AMD/NVIDIA. |
+| Mac Intel / Apple Silicon | `TV-WiFi-macOS.zip` ou `.dmg` | Python 3.11+ avec Tk et FFmpeg à préparer une fois ; capture AVFoundation, encodage VideoToolbox. |
 
-## Installer sur Mac, sans assistant
+Sur Linux, ouvrez le `.deb` avec votre gestionnaire de paquets, ou décompressez le ZIP et lancez `Installer le raccourci.sh`. Sur Mac, ouvrez `Installer les prérequis.command`, puis **TV Wi-Fi.app**. Les paquets ne démarrent aucun partage. [Guide Linux](linux/README.md) · [Guide Mac](macos/README.txt).
 
-1. **[Téléchargez la version Mac](https://github.com/ElGrandeXu/tv-wifi/releases/latest/download/TV-WiFi-macOS.zip)** et décompressez le fichier.
-2. **La première fois seulement**, ouvrez `Installer les prérequis.command`. Il vous aide à installer les outils nécessaires s’ils manquent.
-3. Ouvrez **TV Wi-Fi.app**. Acceptez les autorisations **Réseau local** et **Enregistrement de l’écran** demandées par le Mac.
+**Le son est optionnel et désactivé au démarrage.** Linux : cochez « Partager aussi le son du système ». Mac : routez votre sortie vers [BlackHole](https://github.com/ExistentialAudio/BlackHole), puis sélectionnez cette entrée dans l’app. Aucun microphone physique n’est proposé. Choisissez 720p si le réseau ou l’ordinateur peine ; le mode « Sans GPU » contourne un encodeur NVIDIA défaillant.
 
-Les fois suivantes, ouvrez simplement **TV Wi-Fi.app**. Aucun son n’est capturé, même si le nom du réglage macOS mentionne aussi l’audio. [Besoin d’aide sur Mac ?](macos/README.txt)
+**Limites de qualification :** les tests automatiques vérifient le protocole, les commandes Mac, le contrat D-Bus du portail et un vrai flux vidéo/audio synthétique Linux. Ils ne remplacent pas un essai de réception sur votre TV, de capture dans une session Wayland réelle ou des permissions/captures sur un Mac. Le DMG et le `.deb` sont **non signés** ; le DMG n’est pas notarié et n’embarque pas Python/FFmpeg. Un DMG ne supprime pas les autorisations de confidentialité Apple.
 
-## Installer sur Linux, sans assistant
+## Vérifier avant d’installer
 
-**[Téléchargez la version Linux](https://github.com/ElGrandeXu/tv-wifi/releases/latest/download/TV-WiFi-Linux.zip)**, décompressez-la et ouvrez `Installer le raccourci.sh`. Le raccourci **TV Wi-Fi** apparaît sur votre Bureau.
-
-Cette version nécessite une **carte NVIDIA** et une session **X11**. Si vous ne savez pas si votre ordinateur convient, demandez à votre assistant de le vérifier. [Prérequis Linux](linux/README.md).
-
-## Pour les assistants IA : commandes exactes
-
-**Procédure complète : [INSTALL_LLM.md](INSTALL_LLM.md)** — détection du système, prérequis, chemins de lancement et vérifications.
-
-Après avoir vérifié les prérequis de ce guide, utilisez ces mêmes commandes sur Mac et Linux :
+Téléchargez un paquet et `SHA256SUMS` depuis **la même version** ci-dessus. Dans le dossier contenant ces deux fichiers :
 
 ```bash
-curl -fL https://raw.githubusercontent.com/ElGrandeXu/tv-wifi/main/install.sh -o /tmp/tv-wifi-install.sh
-bash /tmp/tv-wifi-install.sh
+# Linux, par exemple pour le paquet Debian
+sha256sum --ignore-missing -c SHA256SUMS
+# Mac, par exemple pour le ZIP
+shasum -a 256 TV-WiFi-macOS.zip
+# Comparez exactement cette empreinte à la ligne correspondante de SHA256SUMS.
 ```
 
-L’installateur choisit la bonne version, vérifie le téléchargement et installe l’application dans le compte utilisateur. Il **ne demande aucune saisie interactive**, n’installe pas de pilote et ne lance pas le partage. Si un outil manque, consultez le guide ci-dessus.
+Un SHA256 détecte une corruption ou une différence ; téléchargé depuis le même compte GitHub, il ne protège pas contre un compte éditeur compromis. [Sécurité et réseau](SECURITY.md).
 
-<details>
-<summary>Sources et tests, pour les développeurs</summary>
+## Installer avec un assistant IA / LLM
 
-Sources : [`linux/`](linux/) et [`macos/`](macos/).
+Donnez-lui ce dépôt et ce message :
+
+```text
+Installe TV Wi-Fi depuis https://github.com/ElGrandeXu/tv-wifi.
+Lis INSTALL_LLM.md et agent.json. Identifie mon système et vérifie les prérequis.
+Télécharge une version précise et vérifie son SHA256 avant d’exécuter quoi que ce soit.
+Installe dans mon compte utilisateur, puis ouvre l’application sans choisir de TV
+ni démarrer le partage à ma place. Ne change ni pilotes, protections, session
+ou routage audio. Demande-moi les permissions système réellement nécessaires.
+```
+
+N’accordez pas de droits administrateur généraux à un assistant. L’application ne nécessite pas d’IA pour fonctionner. [Procédure et commandes exactes](INSTALL_LLM.md) · [Description machine lisible](agent.json).
+
+## Développer et vérifier
+
+Une seule implémentation réseau dans [`common/dlna.py`](common/dlna.py), avec interfaces et capture propres à chaque OS dans `linux/` et `macos/`.
 
 ```bash
 python3 -m unittest discover -s linux -p 'test_*.py' -v
 python3 -m unittest discover -s macos -p 'test_*.py' -v
 python3 -m unittest discover -s tests -p 'test_*.py' -v
+python3 build_release.py
 ```
 
-Reconstruire les paquets : `python3 build_release.py` ; les fichiers sont créés dans `dist/`.
-
-</details>
+Le build produit les ZIP, l’installateur et `SHA256SUMS` dans `dist/`, plus un `.deb` si `dpkg-deb` existe. Le [build Mac](docs/RELEASING.md) crée le DMG sur macOS. [Changements](CHANGELOG.md) · [Vérification et maintenance](docs/TESTING.md).

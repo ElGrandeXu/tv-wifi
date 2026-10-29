@@ -17,8 +17,9 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
-sys.path.insert(0, str(Path(__file__).parent))
-import tv_wifi as app
+sys.path.insert(0, str(Path(__file__).parents[1]/'common'))
+import dlna as app
+REAL_PARSE_IP = app.parse_ip
 
 
 class Receiver:
@@ -100,6 +101,9 @@ FAKE_ENCODER = [sys.executable, '-u', '-c',
 
 class Tests(unittest.TestCase):
     def setUp(self):
+        self.ip_patch = patch.object(app, 'parse_ip', side_effect=lambda v: v if v == '127.0.0.1' else REAL_PARSE_IP(v))
+        self.ip_patch.start()
+        self.addCleanup(self.ip_patch.stop)
         self.receiver = Receiver()
         self.tv = app.describe(self.receiver.location, '127.0.0.1')
 
@@ -134,46 +138,63 @@ class Tests(unittest.TestCase):
             worker.join(timeout=2)
 
     def test_stream_receives_and_disconnect_releases_capture_and_server(self):
-        session = app.CastSession(self.tv)
+        session = app.CastSession(self.tv, command=FAKE_ENCODER)
         try:
-            with patch.object(app, 'PIPELINE', FAKE_ENCODER):
-                session.start()
-                processes = list(session.processes)
-                self.assertTrue(session.bytes > 0)
-                p = urllib.parse.urlsplit(session.uri)
-                # Même la bonne TV ne peut pas lire un autre chemin.
-                with self.assertRaises(urllib.error.HTTPError) as caught:
-                    urllib.request.urlopen(f'http://{p.netloc}/wrong', timeout=2)
-                self.assertEqual(caught.exception.code, 403)
-                # Une autre IP ne peut pas recevoir le bureau, même avec le bon jeton.
-                conn = http.client.HTTPConnection(p.hostname, p.port, timeout=2,
-                                                  source_address=('127.0.0.2', 0))
-                conn.request('HEAD', p.path)
-                self.assertEqual(conn.getresponse().status, 403)
-                conn.close()
-                session.stop()
-                session.stop()  # Idempotence : pas de deuxième Stop distant.
-                self.assertTrue(all(process.poll() is not None for process in processes))
-                self.assertEqual(self.receiver.actions.count('Stop'), 1)
-                with self.assertRaises(OSError):
-                    socket.create_connection((p.hostname, p.port), timeout=.2)
+            session.start()
+            processes = list(session.processes)
+            self.assertTrue(session.bytes > 0)
+            p = urllib.parse.urlsplit(session.uri)
+            # Même la bonne TV ne peut pas lire un autre chemin.
+            with self.assertRaises(urllib.error.HTTPError) as caught:
+                urllib.request.urlopen(f'http://{p.netloc}/wrong', timeout=2)
+            self.assertEqual(caught.exception.code, 403)
+            session.stop()
+            session.stop()  # Idempotence : pas de deuxième Stop distant.
+            self.assertTrue(all(process.poll() is not None for process in processes))
+            self.assertEqual(self.receiver.actions.count('Stop'), 1)
+            with self.assertRaises(OSError):
+                socket.create_connection((p.hostname, p.port), timeout=.2)
         finally:
             session.stop()
 
-    def test_disconnect_does_not_stop_someone_elses_content(self):
-        session = app.CastSession(self.tv)
+
+    @unittest.skipIf(sys.platform == 'darwin', 'Adresse loopback secondaire absente sur Mac sans configuration root')
+    def test_other_peer_cannot_read_even_with_the_correct_token(self):
+        session = app.CastSession(self.tv, command=FAKE_ENCODER)
         try:
-            with patch.object(app, 'PIPELINE', FAKE_ENCODER):
-                session.start()
-                self.receiver.uri = 'http://another-computer/lecture.mp4'
-                session.stop()
-                self.assertNotIn('Stop', self.receiver.actions)
+            session.start()
+            p = urllib.parse.urlsplit(session.uri)
+            conn = http.client.HTTPConnection(p.hostname, p.port, timeout=2,
+                                              source_address=('127.0.0.2', 0))
+            conn.request('HEAD', p.path)
+            self.assertEqual(conn.getresponse().status, 403)
+            conn.close()
+        finally:
+            session.stop()
+
+    def test_capture_spawn_error_is_reported_and_fully_cleaned(self):
+        session = app.CastSession(self.tv, command=['/nonexistent-tv-wifi-encoder'])
+        with self.assertRaises(app.TVError):
+            session.start()
+        self.assertTrue(session.closed)
+        self.assertFalse(session.processes)
+        parsed = urllib.parse.urlsplit(session.uri)
+        with self.assertRaises(OSError):
+            socket.create_connection((parsed.hostname, parsed.port), timeout=.2)
+
+    def test_disconnect_does_not_stop_someone_elses_content(self):
+        session = app.CastSession(self.tv, command=FAKE_ENCODER)
+        try:
+            session.start()
+            self.receiver.uri = 'http://another-computer/lecture.mp4'
+            session.stop()
+            self.assertNotIn('Stop', self.receiver.actions)
         finally:
             session.stop()
 
     def test_rejected_play_is_cleaned_up(self):
         self.receiver.reject_play = True
-        session = app.CastSession(self.tv)
+        session = app.CastSession(self.tv, command=FAKE_ENCODER)
         try:
             with self.assertRaisesRegex(app.TVError, 'HTTP 500'):
                 session.start()
@@ -185,7 +206,7 @@ class Tests(unittest.TestCase):
     def test_cancelled_connection_does_not_send_commands(self):
         cancel = threading.Event()
         cancel.set()
-        session = app.CastSession(self.tv, cancel)
+        session = app.CastSession(self.tv, cancel, FAKE_ENCODER)
         try:
             with self.assertRaisesRegex(app.TVError, 'annulée'):
                 session.start()
@@ -213,10 +234,10 @@ class Tests(unittest.TestCase):
             self.assertEqual(app.PREFS.read_text(), '{invalide')
 
     def test_invalid_manual_ip_rejected_before_network(self):
-        self.assertEqual(app.parse_ip(' 192.168.1.100 '), '192.168.1.100')
+        self.assertEqual(REAL_PARSE_IP(' 192.168.1.100 '), '192.168.1.100')
         for value in ['example.com', '8.8.8.8', '127.0.0.1', '0.0.0.0', '192.168.1.999']:
             with self.subTest(ip=value), self.assertRaises(app.TVError):
-                app.parse_ip(value)
+                REAL_PARSE_IP(value)
 
 
 

@@ -1,63 +1,46 @@
-TV WI-FI — VERSION MAC
-======================
+TV WI-FI SUR MAC — version 1.1.0
 
-1. Décompressez TV-WiFi-macOS.zip sur le Mac.
-2. La première fois seulement, ouvrez « Installer les prérequis.command ».
-   Si nécessaire, il vous guide vers Python (python.org) et Homebrew, puis installe
-   FFmpeg 7. Les outils déjà présents sont réutilisés. Une connexion Internet et,
-   selon le Mac de l’école, l’aide de son administrateur peuvent être nécessaires.
-3. Ouvrez « TV Wi-Fi.app ». Pour les utilisations suivantes, seule cette étape reste.
-   Vous pouvez déplacer le dossier complet sur votre Bureau ou dans Applications.
+1. Décompressez le ZIP, ou ouvrez le DMG et copiez le dossier TV Wi-Fi macOS
+   dans votre compte utilisateur. Ne lancez pas les prérequis depuis le DMG
+   en lecture seule : travaillez dans la copie.
+2. La première fois, ouvrez « Installer les prérequis.command » : Python 3.11+
+   avec Tk et FFmpeg avec AVFoundation/VideoToolbox doivent être disponibles.
+   Ils ne sont pas embarqués. Mac Intel et Apple Silicon sont prévus.
+3. Ouvrez TV Wi-Fi.app. Autorisez normalement Réseau local et Enregistrement
+   de l’écran. Choisissez l’écran, la TV DLNA, puis activez le partage.
 
-Choisissez la TV dans la liste ou saisissez son adresse IP. Choisissez l’écran
-du Mac à partager, puis activez « Partager mon écran ». La vidéo est transmise
-en Full HD (1920 × 1080), 30 images/s, sans son, sans caméra ni microphone.
-La dernière TV est mémorisée, mais aucune connexion n’est lancée automatiquement.
-Décochez l’interrupteur ou fermez la fenêtre pour couper la diffusion.
+Le paquet est NON SIGNÉ et NON NOTARIÉ. Un DMG ne supprime ni Gatekeeper ni
+les permissions d’écran ; aucun contournement n’est fourni. Les permissions
+peuvent être attribuées par macOS à Python, FFmpeg ou au lanceur effectivement
+utilisé. Après autorisation, une fermeture/réouverture peut être nécessaire.
+Si une politique de l’établissement bloque l’app, passer par l’administrateur.
+Le contrôle natif des permissions, de la capture et de la réception TV n’a
+pas été réalisé sur un Mac utilisateur ; les tests de commandes ne le remplacent pas.
 
-LE MAC DEMANDE DES AUTORISATIONS
+SON OPTIONNEL (désactivé au démarrage)
 
-Acceptez l’accès au réseau local et à l’enregistrement de l’écran pour l’application
-qui le demande (TV Wi-Fi, Python ou l’outil de capture selon le lancement).
-Les réglages se trouvent dans Réglages Système → Confidentialité et sécurité :
-« Réseau local » et « Enregistrement de l’écran et des sons du système ».
-L’intitulé macOS mentionne le son, mais ce programme ne capture aucun son.
-Après une autorisation d’écran, il peut être nécessaire de quitter puis rouvrir
-TV Wi-Fi. Aucun réglage de sécurité n’est désactivé automatiquement.
+L’app ne propose que les entrées virtuelles BlackHole 2ch, 16ch ou 64ch.
+Aucun microphone physique n’est proposé ; l’app ne modifie pas le routage.
 
-L’application n’est pas signée/notariée par Apple. Si macOS la bloque, utilisez
-les options normales « Ouvrir quand même » de Confidentialité et sécurité pour
-ce programme que vous avez choisi, ou faites valider le paquet par votre école.
-Ne désactivez pas Gatekeeper. « Lancer TV Wi-Fi.command » et le fichier Python
-sont aussi fournis pour un lancement explicite depuis le dossier complet.
+Pour le son système : installer BlackHole depuis son projet officiel, puis
+suivre son guide pour une sortie multiple (haut-parleurs + BlackHole) dans
+Configuration audio et MIDI. Choisir cette sortie pour la lecture, relancer
+TV Wi-Fi et sélectionner BlackHole dans le menu Son. Pour revenir en arrière,
+rechoisir votre ancienne sortie audio. BlackHole est facultatif ; aucun pilote
+ou périphérique virtuel n’est installé automatiquement par TV Wi-Fi.
 
-COMPATIBILITÉ ET LIMITES
+macOS peut demander une autorisation nommée « Microphone » pour accéder à
+l’entrée audio virtuelle via AVFoundation : elle ne signifie pas que l’app
+sélectionne un micro. Si BlackHole n’est pas routé, le son sera silencieux.
+Guide officiel : https://github.com/ExistentialAudio/BlackHole
 
-- Code compatible Mac Intel et Apple Silicon ; Python 3.11+ avec Tk et FFmpeg
-  compilé pour le Mac sont nécessaires. macOS récent, 14 ou ultérieur conseillé
-  pour les outils de préparation actuels. Aucun binaire Linux ou NVIDIA inclus.
-- TV avec récepteur vidéo DLNA, accessible sur le même réseau. Ce n’est pas
-  un client AirPlay/Chromecast et l’IP seule n’active pas une fonction absente.
-- Plusieurs secondes de décalage restent possibles. La mise en mémoire tampon
-  du lecteur TV ne se règle pas entièrement depuis cette application.
-- Tout l’écran sélectionné est partagé. Le flux n’est pas enregistré ; seuls
-  l’IP choisie et un chemin aléatoire peuvent le recevoir. Transport local HTTP,
-  non chiffré. Le serveur s’arrête avec la déconnexion ou la fermeture.
-- Une autre personne qui reprend la TV ne voit pas sa lecture arrêtée par notre
-  bouton : la commande Stop ne part que si la TV utilise encore notre URL.
+L’image est en 1080p30 ou 720p30, sans étirement du format. Plusieurs secondes
+de décalage sont possibles. Fermer la fenêtre coupe la diffusion. La TV et
+le Mac doivent être sur le même réseau de confiance et la TV doit recevoir
+la vidéo DLNA. AirPlay seul ne suffit pas. Ne pas désactiver le pare-feu pour
+résoudre un réseau scolaire isolé.
 
-Ce paquet a été construit et ses éléments testables contrôlés sur Linux.
-La capture AVFoundation, les autorisations et l’interface native Mac ne peuvent
-pas être validées matériellement sans un Mac. Ne pas confondre ces contrôles
-avec une recette réussie dans toutes les salles de l’école.
-
-Préférences privées : ~/Library/Application Support/TV Wi-Fi/preferences.json
-Journal technique : ~/Library/Logs/TV Wi-Fi.log (pas d’image enregistrée).
-
-Sources techniques officielles consultées pour le portage :
-https://docs.python.org/3/using/mac.html
-https://www.ffmpeg.org/doxygen/trunk/avfoundation_8m_source.html
-https://www.ffmpeg.org/doxygen/7.1/videotoolboxenc_8c_source.html
-https://formulae.brew.sh/formula/ffmpeg@7
-https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy
-https://support.apple.com/fr-be/guide/mac-help/mchld6aa7d23/mac
+Préférences : ~/Library/Application Support/TV Wi-Fi/preferences.json
+Diagnostic sans capture : python3 tv_wifi_macos.py --diagnose (dans les sources
+ou dans TV Wi-Fi.app/Contents/Resources avec un Python adapté).
+Retrait : supprimer le dossier installé ; conserver les préférences si souhaité.

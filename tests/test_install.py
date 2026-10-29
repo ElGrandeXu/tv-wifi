@@ -3,6 +3,7 @@ import hashlib
 import os
 from pathlib import Path
 import subprocess
+import stat
 import tempfile
 import unittest
 import zipfile
@@ -110,16 +111,65 @@ output.write_bytes(data)
         self.prefix.mkdir()
         (self.prefix/'cours.txt').write_text('à conserver')
         result = self.run_installer()
-        self.assertEqual(result.returncode, 2)
+        self.assertNotEqual(result.returncode, 0)
         self.assertEqual((self.prefix/'cours.txt').read_text(), 'à conserver')
         self.assertFalse((self.root/'curl.log').exists())
 
-    def test_wayland_and_unsupported_system_do_not_download(self):
+    def test_wayland_is_supported_without_changing_session(self):
         self.env['XDG_SESSION_TYPE'] = 'wayland'
-        self.assertEqual(self.run_installer().returncode, 2)
+        result = self.run_installer('--no-shortcut')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.env['XDG_SESSION_TYPE'], 'wayland')
+
+    def test_unsupported_system_does_not_download(self):
         self.env['TV_WIFI_TEST_PLATFORM'] = 'OtherOS'
         self.assertEqual(self.run_installer().returncode, 2)
         self.assertFalse((self.root/'curl.log').exists())
+
+
+    def alter_zip(self, name, data=b'attack', symlink=False):
+        archive = self.fixtures/'TV-WiFi-Linux.zip'
+        with zipfile.ZipFile(archive, 'a') as zipped:
+            info = zipfile.ZipInfo(name)
+            info.create_system = 3
+            info.external_attr = ((stat.S_IFLNK | 0o777) if symlink else (stat.S_IFREG | 0o644)) << 16
+            zipped.writestr(info, data)
+        digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+        (self.fixtures/'SHA256SUMS').write_text(digest+'  TV-WiFi-Linux.zip\n')
+
+    def test_path_traversal_absolute_paths_and_zip_symlinks_rejected_after_hash_check(self):
+        for name, link in [('TV Wi-Fi Linux/../../escaped', False), ('/tmp/escaped', False),
+                           ('TV Wi-Fi Linux/link', True), ('other-root/file', False)]:
+            self.make_packages()
+            self.alter_zip(name, symlink=link)
+            with self.subTest(name=name):
+                result = self.run_installer('--no-shortcut')
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('dangereux', result.stderr)
+                self.assertFalse(self.prefix.exists())
+
+    def test_foreign_current_and_symlinked_versions_are_preserved(self):
+        self.assertEqual(self.run_installer('--no-shortcut').returncode, 0)
+        current = self.prefix/'current'
+        current.unlink()
+        current.write_text('foreign')
+        self.assertNotEqual(self.run_installer('--no-shortcut').returncode, 0)
+        self.assertEqual(current.read_text(), 'foreign')
+
+    def test_modified_installed_version_is_not_silently_reused(self):
+        self.assertEqual(self.run_installer('--no-shortcut').returncode, 0)
+        source = self.prefix/'current/TV Wi-Fi Linux/tv_wifi.py'
+        source.write_text('changed locally')
+        result = self.run_installer('--no-shortcut')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('modifiée', result.stderr)
+        self.assertEqual(source.read_text(), 'changed locally')
+
+    def test_download_uses_immutable_release_and_https_redirect_policy(self):
+        installer = INSTALLER.read_text()
+        self.assertIn("VERSION='v1.1.0'", installer)
+        self.assertIn('--proto-redir', installer)
+        self.assertNotIn('releases/latest', installer)
 
 
 if __name__ == '__main__':

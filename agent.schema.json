@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TV Wi-Fi local agent manifest",
+  "description": "Metadata for terminal-based assistants; not an OpenAPI service or a grant of permissions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "format_version", "name", "version", "repository", "installation_guide", "security_guide", "release", "entrypoints", "diagnostics_argument", "capabilities", "boundaries"],
+  "properties": {
+    "$schema": {"const": "./agent.schema.json"},
+    "format_version": {"const": 1},
+    "name": {"const": "tv-wifi"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "repository": {"const": "https://github.com/ElGrandeXu/tv-wifi"},
+    "installation_guide": {"const": "INSTALL_LLM.md"},
+    "security_guide": {"const": "SECURITY.md"},
+    "release": {"type": "string", "pattern": "^https://github.com/ElGrandeXu/tv-wifi/releases/tag/v[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "entrypoints": {
+      "type": "object", "additionalProperties": false, "required": ["linux", "macos"],
+      "properties": {
+        "linux": {"const": ["python3", "linux/tv_wifi.py"]},
+        "macos": {"const": ["python3", "macos/tv_wifi_macos.py"]}
+      }
+    },
+    "diagnostics_argument": {"const": "--diagnose"},
+    "capabilities": {
+      "type": "object", "additionalProperties": false, "required": ["linux", "macos", "receiver"],
+      "properties": {
+        "linux": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "macos": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "receiver": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      }
+    },
+    "boundaries": {
+      "type": "object", "additionalProperties": false,
+      "required": ["auto_start_sharing", "physical_microphone", "requires_admin_for_user_install", "may_change_drivers_or_security", "may_change_audio_routing", "requires_explicit_user_capture_action"],
+      "properties": {
+        "auto_start_sharing": {"const": false}, "physical_microphone": {"const": false},
+        "requires_admin_for_user_install": {"const": false}, "may_change_drivers_or_security": {"const": false},
+        "may_change_audio_routing": {"const": false}, "requires_explicit_user_capture_action": {"const": true}
+      }
+    }
+  }
+}

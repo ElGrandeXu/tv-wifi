@@ -17,16 +17,17 @@ def build(destination=None):
     resources.mkdir(parents=True, exist_ok=True)
     executable.parent.mkdir(parents=True, exist_ok=True)
     for name in ['dlna.py', 'mac_backend.py', 'tv_wifi_macos.py']:
-        shutil.copyfile(source/name, resources/name)
+        shutil.copyfile(source.parent/'common'/name if name == 'dlna.py' else source/name, resources/name)
     shutil.copyfile(source/'launch.sh', executable)
     executable.chmod(0o755)
     info = {'CFBundleName': 'TV Wi-Fi', 'CFBundleDisplayName': 'TV Wi-Fi',
             'CFBundleIdentifier': 'org.marc.TVWifiMac', 'CFBundleExecutable': 'tv-wifi',
-            'CFBundlePackageType': 'APPL', 'CFBundleShortVersionString': '1.0',
-            'CFBundleVersion': '1', 'LSMinimumSystemVersion': '10.15',
+            'CFBundlePackageType': 'APPL', 'CFBundleShortVersionString': '1.1.0',
+            'CFBundleVersion': '2', 'LSMinimumSystemVersion': '10.15',
             'NSHighResolutionCapable': True,
             'NSLocalNetworkUsageDescription': 'Rechercher les téléviseurs de votre salle et leur transmettre votre écran.',
-            'NSScreenCaptureUsageDescription': 'Partager l’écran choisi en Full HD, sans son, sur votre TV.'}
+            'NSScreenCaptureUsageDescription': 'Partager l’écran choisi sur votre TV.',
+            'NSMicrophoneUsageDescription': 'Lire le son système routé vers BlackHole, seulement si vous activez le son. Aucun microphone physique n’est sélectionné.'}
     with (executable.parent.parent/'Info.plist').open('wb') as stream:
         plistlib.dump(info, stream, sort_keys=True)
     shutil.copyfile(source/'README.txt', staging/'LIRE-MOI.txt')

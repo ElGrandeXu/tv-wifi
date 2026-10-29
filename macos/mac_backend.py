@@ -11,6 +11,8 @@ import sys
 import threading
 import time
 
+if (Path(__file__).resolve().parents[1] / 'common').is_dir():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'common'))
 import dlna
 
 
@@ -38,6 +40,21 @@ def find_ffmpeg():
     raise dlna.TVError('FFmpeg est absent. Lancez « Installer les prérequis.command » dans le dossier fourni.')
 
 
+def diagnostics():
+    result = {'platform': sys.platform, 'capture_started': False}
+    try:
+        executable = find_ffmpeg()
+        devices = subprocess.run([executable, '-hide_banner', '-devices'], capture_output=True,
+                                 text=True, timeout=8)
+        encoders = subprocess.run([executable, '-hide_banner', '-encoders'], capture_output=True,
+                                  text=True, timeout=8)
+        result.update(ffmpeg=True, avfoundation='avfoundation' in devices.stdout + devices.stderr,
+                      videotoolbox='h264_videotoolbox' in encoders.stdout + encoders.stderr)
+    except (dlna.TVError, OSError, subprocess.SubprocessError) as error:
+        result.update(ffmpeg=False, error=str(error))
+    return result
+
+
 def parse_screens(output):
     screens = []
     in_video = False
@@ -54,12 +71,35 @@ def parse_screens(output):
     return screens
 
 
-def list_screens():
+def device_listing():
     result = subprocess.run([find_ffmpeg(), '-hide_banner', '-nostdin', '-f', 'avfoundation',
                              '-list_devices', 'true', '-i', ''],
                             capture_output=True, text=True, timeout=12)
     # FFmpeg quitte normalement avec un code non nul après une simple liste.
-    screens = parse_screens(result.stderr + result.stdout)
+    return result.stderr + result.stdout
+
+
+def parse_loopbacks(output):
+    devices = []
+    in_audio = False
+    for line in output.splitlines():
+        if 'AVFoundation audio devices:' in line:
+            in_audio = True
+        elif 'AVFoundation video devices:' in line:
+            in_audio = False
+        elif in_audio:
+            match = re.search(r'\[\d+\]\s+(BlackHole (?:2|16|64)ch)\s*$', line)
+            if match and match.group(1) not in devices:
+                devices.append(match.group(1))
+    return devices
+
+
+def list_audio():
+    return parse_loopbacks(device_listing())
+
+
+def list_screens():
+    screens = parse_screens(device_listing())
     if not screens:
         raise dlna.TVError('Aucun écran détecté. Vérifiez l’autorisation d’enregistrement de l’écran '
                            'dans Réglages Système → Confidentialité et sécurité, puis relancez TV Wi-Fi.')
@@ -78,16 +118,26 @@ def request_screen_permission():
     return bool(quartz.CGRequestScreenCaptureAccess())
 
 
-def capture_command(screen):
+def capture_command(screen, audio=None, profile='1080p'):
     if not re.fullmatch(r'Capture screen \d+', screen):
         raise dlna.TVError('Choisissez un écran ; aucune caméra ou entrée audio n’est utilisée.')
-    return [find_ffmpeg(), '-hide_banner', '-loglevel', 'error', '-nostdin',
+    if audio and not re.fullmatch(r'BlackHole (?:2|16|64)ch', audio):
+        raise dlna.TVError('Seule une entrée audio virtuelle BlackHole peut être utilisée ; jamais le micro.')
+    if audio and audio not in list_audio():
+        raise dlna.TVError('Cette entrée BlackHole est indisponible. Vérifiez le routage audio du Mac.')
+    if profile not in {'1080p', '720p'}:
+        raise dlna.TVError('Profil vidéo inconnu.')
+    size, rate = ('1920:1080', '12M') if profile == '1080p' else ('1280:720', '5M')
+    command = [find_ffmpeg(), '-hide_banner', '-loglevel', 'error', '-nostdin',
             '-f', 'avfoundation', '-framerate', '30', '-capture_cursor', '1',
-            '-pixel_format', 'bgra', '-i', screen + ':none', '-an',
-            '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,'
-                   'pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=yuv420p',
-            '-c:v', 'h264_videotoolbox', '-realtime', '1', '-b:v', '12M',
-            '-maxrate', '12M', '-bufsize', '3M', '-g', '30', '-bf', '0',
+            '-pixel_format', 'bgra', '-i', screen + ':' + (audio or 'none'), '-map', '0:v:0']
+    command += (['-map', '0:a:0', '-c:a', 'aac', '-b:a', '128k', '-ar', '48000', '-ac', '2',
+                 '-af', 'aresample=async=1'] if audio else ['-an'])
+    return command + [
+            '-vf', f'scale={size}:force_original_aspect_ratio=decrease:force_divisible_by=2,'
+                   f'pad={size}:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p',
+            '-c:v', 'h264_videotoolbox', '-realtime', '1', '-b:v', rate,
+            '-maxrate', rate, '-bufsize', '3M', '-g', '30', '-bf', '0',
             '-profile:v', 'baseline', '-pix_fmt', 'yuv420p',
             '-mpegts_flags', 'resend_headers', '-muxdelay', '0', '-muxpreload', '0',
             '-flush_packets', '1', '-f', 'mpegts', 'pipe:1']
@@ -107,11 +157,10 @@ class Controller:
         self.state = state
         self.events.put(('state', state, message))
 
-    def connect(self, ip, screen, known):
+    def connect(self, ip, screen, known, audio=None, profile='1080p'):
         if self.state != 'idle':
             return
         ip = dlna.parse_ip(ip)
-        command = capture_command(screen)
         self.cancel = threading.Event()
         cancel = self.cancel
         self.notify('connecting', 'Connexion à ' + ip + '…')
@@ -120,6 +169,9 @@ class Controller:
             session = None
             try:
                 tv = dlna.resolve_tv(ip, known, cancel)
+                if cancel.is_set():
+                    raise dlna.TVError("Connexion annulée.")
+                command = capture_command(screen, audio, profile)
                 session = dlna.CastSession(tv, cancel, command)
                 session.start()
                 with self.lock:

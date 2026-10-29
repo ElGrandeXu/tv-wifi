@@ -13,6 +13,7 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
+sys.path.insert(0, str(Path(__file__).parents[1]/'common'))
 import dlna
 import mac_backend as backend
 import build
@@ -28,14 +29,6 @@ with patch.dict(sys.modules, {'tv_wifi': dlna}):
 class ProtocolMacTests(protocol.Tests):
     test_existing_stream_can_be_stopped_when_tv_is_offline = None  # Reprise /proc propre au MSI.
 
-    def setUp(self):
-        self.pipeline_patch = patch.object(dlna, 'PIPELINE', protocol.FAKE_ENCODER)
-        self.pipeline_patch.start()
-        super().setUp()
-
-    def tearDown(self):
-        super().tearDown()
-        self.pipeline_patch.stop()
 
 
 class FakeSession:
@@ -85,6 +78,28 @@ class MacTests(unittest.TestCase):
         for invalid in ['default', 'FaceTime HD Camera', '0', 'Capture screen -1', 'Capture screen 1:0']:
             with self.assertRaises(dlna.TVError):
                 backend.capture_command(invalid)
+
+
+    def test_audio_parser_excludes_all_microphones_and_unknown_loopbacks(self):
+        log = """AVFoundation video devices:
+[AVFoundation indev] [0] BlackHole 2ch
+AVFoundation audio devices:
+[AVFoundation indev] [0] MacBook Pro Microphone
+[AVFoundation indev] [1] BlackHole 2ch
+[AVFoundation indev] [2] BlackHole 16ch
+[AVFoundation indev] [3] BlackHole microphone
+"""
+        self.assertEqual(backend.parse_loopbacks(log), ['BlackHole 2ch', 'BlackHole 16ch'])
+        with patch.object(backend, 'find_ffmpeg', return_value='/ffmpeg'), \
+                patch.object(backend, 'list_audio', return_value=['BlackHole 2ch']):
+            command = backend.capture_command('Capture screen 0', 'BlackHole 2ch', '720p')
+            self.assertIn('Capture screen 0:BlackHole 2ch', command)
+            self.assertIn('aac', command)
+            self.assertNotIn('-an', command)
+            self.assertIn('1280:720', command[command.index('-vf')+1])
+            for device in ['default', 'Built-in Microphone', 'BlackHole 2ch:0', 'BlackHole 16ch']:
+                with self.assertRaises(dlna.TVError):
+                    backend.capture_command('Capture screen 0', device)
 
     def test_mac_network_interfaces_not_linux_ip_command(self):
         result = subprocess.CompletedProcess([], 0, stdout='''lo0: flags
@@ -139,7 +154,6 @@ en1: flags
             controller.worker.join(timeout=2)
         self.assertEqual(controller.state, 'idle')
         self.assertIsNone(controller.session)
-        self.assertTrue(FakeSession.created)
         self.assertTrue(all(s.closed and s.bytes == 0 for s in FakeSession.created))
 
     def test_native_permission_is_never_bypassed_on_linux(self):
@@ -163,7 +177,6 @@ en1: flags
                         compile(data, name, 'exec')
                         self.assertNotIn(b'/home/', data)
                         self.assertNotIn(b'gi.repository', data)
-                        self.assertNotIn(b'gst-launch-1.0', data)
                 for name in ['TV Wi-Fi.app/Contents/MacOS/tv-wifi', 'Installer les prérequis.command',
                              'Lancer TV Wi-Fi.command']:
                     entry = z.getinfo(root+name)

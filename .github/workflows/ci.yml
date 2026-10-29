@@ -1,0 +1,68 @@
+name: Tests and packages
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Dependencies for synthetic media and private D-Bus tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi gir1.2-gtk-3.0 gir1.2-gst-plugins-base-1.0 python3-jsonschema dbus-daemon xvfb xauth gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav
+      - name: Tests
+        run: |
+          /usr/bin/python3 -m unittest discover -s linux -p 'test_*.py' -v
+          /usr/bin/python3 -m unittest discover -s macos -p 'test_*.py' -v
+          /usr/bin/python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: GTK lifecycle without capture or network discovery
+        run: xvfb-run -a /usr/bin/python3 tests/gui_smoke.py
+      - name: Debian and portable packages
+        run: |
+          /usr/bin/python3 build_release.py --require-deb
+          dpkg-deb --info dist/tv-wifi_1.1.0_all.deb
+          cd dist
+          sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-packages
+          path: |
+            dist/TV-WiFi-Linux.zip
+            dist/tv-wifi_1.1.0_all.deb
+            dist/install.sh
+          if-no-files-found: error
+  macos:
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Portable and Mac command tests (no capture)
+        run: |
+          python3 -m unittest discover -s macos -p 'test_*.py' -v
+          python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Build Mac bundle and unsigned DMG
+        run: |
+          python3 build_release.py
+          python3 macos/build_dmg.py
+          hdiutil verify dist/TV-WiFi-macOS.dmg
+          cd dist
+          shasum -a 256 -c SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: macos-packages-unsigned
+          path: |
+            dist/TV-WiFi-macOS.zip
+            dist/TV-WiFi-macOS.dmg
+          if-no-files-found: error

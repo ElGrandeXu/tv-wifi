@@ -10,7 +10,7 @@ Les réponses SSDP/XML et les URL DLNA sont non fiables : IP IPv4 LAN explicite,
 
 ## Installer
 
-Préférer une **release précise**, télécharger complètement et comparer SHA256 avant exécution. Le script distribué vérifie également le ZIP et refuse traversées de chemin, liens et dossiers étrangers. Un checksum téléchargé du même dépôt ne garantit pas l’identité de l’éditeur si ce dépôt est compromis. Les versions 1.1.0 sont non signées, et le DMG non notarié. Ne pas contourner Gatekeeper ou TCC ; faire intervenir l’administrateur si nécessaire.
+Préférer une **release précise**, télécharger complètement et comparer SHA256 avant exécution. Le script distribué vérifie également le ZIP et refuse traversées de chemin, liens et dossiers étrangers. Un checksum téléchargé du même dépôt ne garantit pas l’identité de l’éditeur si ce dépôt est compromis. Les versions 1.1.x sont non signées, et le DMG non notarié. Ne pas contourner Gatekeeper ou TCC ; faire intervenir l’administrateur si nécessaire.
 
 Un assistant IA n’a besoin d’aucun droit supplémentaire propre à TV Wi-Fi. Une installation utilisateur ne requiert pas sudo ; l’installation de dépendances et du `.deb` relève du gestionnaire système et du mandat de l’utilisateur. Aucun manifeste du dépôt n’autorise une élévation de privilèges ou le démarrage du partage.
 

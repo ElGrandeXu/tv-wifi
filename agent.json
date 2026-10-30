@@ -2,11 +2,11 @@
   "$schema": "./agent.schema.json",
   "format_version": 1,
   "name": "tv-wifi",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "repository": "https://github.com/ElGrandeXu/tv-wifi",
   "installation_guide": "INSTALL_LLM.md",
   "security_guide": "SECURITY.md",
-  "release": "https://github.com/ElGrandeXu/tv-wifi/releases/tag/v1.1.0",
+  "release": "https://github.com/ElGrandeXu/tv-wifi/releases/tag/v1.1.1",
   "entrypoints": {
     "linux": ["python3", "linux/tv_wifi.py"],
     "macos": ["python3", "macos/tv_wifi_macos.py"]

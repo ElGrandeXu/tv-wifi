@@ -73,9 +73,18 @@ class ScreenCastPortal:
             self.session = values['session_handle']
             self.connection.signal_subscribe(DEST, 'org.freedesktop.portal.Session', 'Closed',
                 self.session, None, Gio.DBusSignalFlags.NONE, lambda *a: self.cancel.set())
+            properties = self.connection.call_sync(DEST, PATH, 'org.freedesktop.DBus.Properties',
+                'GetAll', GLib.Variant('(s)', (IFACE,)), GLib.VariantType.new('(a{sv})'),
+                Gio.DBusCallFlags.NONE, 5000, None).unpack()[0]
+            source_types = int(properties.get('AvailableSourceTypes', 1)) & 3
+            if not source_types:
+                raise TVError('Ce portail ne propose ni écran ni fenêtre à partager.')
+            options = {'types': GLib.Variant('u', source_types), 'multiple': GLib.Variant('b', False)}
+            # Le portail masque le pointeur par défaut : l'intégrer si le backend le permet.
+            if int(properties.get('AvailableCursorModes', 0)) & 2:
+                options['cursor_mode'] = GLib.Variant('u', 2)
             # Pas de restauration silencieuse ; le portail choisit écran ou fenêtre.
-            self.request('SelectSources', '(oa{sv})', (self.session,), {
-                'types': GLib.Variant('u', 3), 'multiple': GLib.Variant('b', False)})
+            self.request('SelectSources', '(oa{sv})', (self.session,), options)
             values = self.request('Start', '(osa{sv})', (self.session, ''), {})
             streams = values.get('streams', [])
             if len(streams) != 1 or not isinstance(streams[0][0], int) or streams[0][0] < 1:

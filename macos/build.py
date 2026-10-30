@@ -22,8 +22,8 @@ def build(destination=None):
     executable.chmod(0o755)
     info = {'CFBundleName': 'TV Wi-Fi', 'CFBundleDisplayName': 'TV Wi-Fi',
             'CFBundleIdentifier': 'org.marc.TVWifiMac', 'CFBundleExecutable': 'tv-wifi',
-            'CFBundlePackageType': 'APPL', 'CFBundleShortVersionString': '1.1.0',
-            'CFBundleVersion': '2', 'LSMinimumSystemVersion': '10.15',
+            'CFBundlePackageType': 'APPL', 'CFBundleShortVersionString': '1.1.1',
+            'CFBundleVersion': '3', 'LSMinimumSystemVersion': '10.15',
             'NSHighResolutionCapable': True,
             'NSLocalNetworkUsageDescription': 'Rechercher les téléviseurs de votre salle et leur transmettre votre écran.',
             'NSScreenCaptureUsageDescription': 'Partager l’écran choisi sur votre TV.',

@@ -8,7 +8,7 @@ Utiliser `uname -s`, `uname -m` et, sur Linux, la session `XDG_SESSION_TYPE`. Wi
 
 ### Ubuntu / Mint / Debian avec Python 3.11+
 
-Le `.deb` de la release déclare ses dépendances ; `sudo apt install ./tv-wifi_1.1.0_all.deb` les résout avec le gestionnaire de paquets. Cette installation système exige le mandat correspondant. Pour une installation utilisateur par ZIP, contrôler `/usr/bin/python3`, GTK et GStreamer. Si les dépendances manquent et que leur installation est autorisée :
+Le `.deb` de la release déclare ses dépendances ; `sudo apt install ./tv-wifi_1.1.1_all.deb` les résout avec le gestionnaire de paquets. Cette installation système exige le mandat correspondant. Pour une installation utilisateur par ZIP, contrôler `/usr/bin/python3`, GTK et GStreamer. Si les dépendances manquent et que leur installation est autorisée :
 
 ```bash
 sudo apt-get update
@@ -41,7 +41,7 @@ Prérequis de l’installateur : Bash, curl, Python 3.11+. Utiliser un dossier t
 set -eu
 work_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir"' EXIT
-base_url='https://github.com/ElGrandeXu/tv-wifi/releases/download/v1.1.0'
+base_url='https://github.com/ElGrandeXu/tv-wifi/releases/download/v1.1.1'
 curl -fL --proto '=https' --proto-redir '=https' "$base_url/install.sh" -o "$work_dir/install.sh"
 curl -fL --proto '=https' --proto-redir '=https' "$base_url/SHA256SUMS" -o "$work_dir/SHA256SUMS"
 python3 - "$work_dir" <<'PY'
@@ -59,7 +59,7 @@ bash "$work_dir/install.sh"
 )
 ```
 
-Aucun `curl | bash`, aucun script exécuté depuis la branche mutable `main`. L’installateur est lui-même épinglé à `v1.1.0` et vérifie le ZIP avant toute extraction. Il refuse les liens et chemins dangereux du ZIP, conserve les versions précédentes et remplace atomiquement le lien `current`. Les sommes publiées ne sont pas une signature indépendante : voir `SECURITY.md`.
+Aucun `curl | bash`, aucun script exécuté depuis la branche mutable `main`. L’installateur est lui-même épinglé à `v1.1.1` et vérifie le ZIP avant toute extraction. Il refuse les liens et chemins dangereux du ZIP, conserve les versions précédentes et remplace atomiquement le lien `current`. Les sommes publiées ne sont pas une signature indépendante : voir `SECURITY.md`.
 
 | Système | Emplacement utilisateur par défaut |
 | --- | --- |

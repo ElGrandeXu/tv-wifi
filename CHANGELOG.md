@@ -1,5 +1,10 @@
 # Changements
 
+## 1.1.1
+
+- Wayland : sélection limitée aux sources réellement proposées par le portail, avec pointeur intégré lorsque le backend l’accepte. Le pointeur masqué n’est plus imposé par inadvertance par le réglage par défaut du portail.
+- Les sommes de release n’incluent plus d’anciens paquets Debian restés dans le dossier de build.
+
 ## 1.1.0
 
 - Linux : capture Wayland avec consentement ScreenCast/PipeWire ; repli logiciel x264 sans NVIDIA obligatoire, test synthétique de l’encodeur et mode sans GPU.

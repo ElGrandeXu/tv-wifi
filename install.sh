@@ -1,7 +1,7 @@
 #!/bin/bash
 # Installateur versionné : téléchargement complet, SHA256, extraction contrôlée.
 set -eu
-VERSION='v1.1.0'
+VERSION='v1.1.1'
 BASE_URL="https://github.com/ElGrandeXu/tv-wifi/releases/download/$VERSION"
 prefix=''
 shortcut=1
@@ -13,7 +13,7 @@ while [ "$#" -gt 0 ]; do
         --no-shortcut) shortcut=0; shift ;;
         --help|-h)
             echo 'Usage: bash install.sh [--prefix DOSSIER_DEDIE] [--no-shortcut]'
-            echo 'Installe TV Wi-Fi v1.1.0, sans dépendance, pilote ou capture.'
+            echo 'Installe TV Wi-Fi v1.1.1, sans dépendance, pilote ou capture.'
             exit 0 ;;
         *) echo "Option inconnue : $1" >&2; exit 2 ;;
     esac

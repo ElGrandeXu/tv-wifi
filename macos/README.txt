@@ -1,4 +1,4 @@
-TV WI-FI SUR MAC — version 1.1.0
+TV WI-FI SUR MAC — version 1.1.1
 
 1. Décompressez le ZIP, ou ouvrez le DMG et copiez le dossier TV Wi-Fi macOS
    dans votre compte utilisateur. Ne lancez pas les prérequis depuis le DMG

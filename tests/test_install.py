@@ -167,7 +167,7 @@ output.write_bytes(data)
 
     def test_download_uses_immutable_release_and_https_redirect_policy(self):
         installer = INSTALLER.read_text()
-        self.assertIn("VERSION='v1.1.0'", installer)
+        self.assertIn("VERSION='v1.1.1'", installer)
         self.assertIn('--proto-redir', installer)
         self.assertNotIn('releases/latest', installer)
 

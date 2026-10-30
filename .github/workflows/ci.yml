@@ -27,7 +27,7 @@ jobs:
       - name: Debian and portable packages
         run: |
           /usr/bin/python3 build_release.py --require-deb
-          dpkg-deb --info dist/tv-wifi_1.1.0_all.deb
+          dpkg-deb --info dist/tv-wifi_1.1.1_all.deb
           cd dist
           sha256sum -c SHA256SUMS
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -35,7 +35,7 @@ jobs:
           name: linux-packages
           path: |
             dist/TV-WiFi-Linux.zip
-            dist/tv-wifi_1.1.0_all.deb
+            dist/tv-wifi_1.1.1_all.deb
             dist/install.sh
           if-no-files-found: error
   macos:

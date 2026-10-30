@@ -23,7 +23,9 @@ XML = '''<node><interface name="org.freedesktop.portal.ScreenCast">
 <method name="Start"><arg type="o" direction="in"/><arg type="s" direction="in"/><arg type="a{sv}" direction="in"/><arg type="o" direction="out"/></method>
 <method name="OpenPipeWireRemote"><arg type="o" direction="in"/><arg type="a{sv}" direction="in"/><arg type="h" direction="out"/></method>
 </interface><interface name="org.freedesktop.portal.Session"><method name="Close"/></interface>
-<interface name="org.freedesktop.portal.Request"><method name="Close"/></interface></node>'''
+<interface name="org.freedesktop.portal.Request"><method name="Close"/></interface><interface name="org.freedesktop.DBus.Properties">
+<method name="GetAll"><arg type="s" direction="in"/><arg type="a{sv}" direction="out"/></method>
+</interface></node>'''
 
 
 @unittest.skipUnless(Gio and shutil.which('dbus-daemon') and sys.platform == 'linux', 'Gio/bus privé indisponible')
@@ -37,6 +39,8 @@ class PortalTests(unittest.TestCase):
         self.calls = []
         self.pending = threading.Event()
         self.deny = False
+        self.source_types = 3
+        self.cursor_modes = 3
         self.hold_start = False
         self.ready = threading.Event()
         self.session = '/org/freedesktop/portal/desktop/session/test/capture'
@@ -55,6 +59,7 @@ class PortalTests(unittest.TestCase):
             introspection = Gio.DBusNodeInfo.new_for_xml(XML)
             self.request_info = introspection.interfaces[2]
             self.connection.register_object(PATH, introspection.interfaces[0], self.method, None, None)
+            self.connection.register_object(PATH, introspection.interfaces[3], self.method, None, None)
             self.connection.register_object(self.session, introspection.interfaces[1], self.method, None, None)
             self.ready.set()
             self.loop.run()
@@ -66,6 +71,11 @@ class PortalTests(unittest.TestCase):
 
     def method(self, connection, sender, path, interface, method, parameters, invocation):
         self.calls.append((method, parameters.unpack()))
+        if method == 'GetAll':
+            invocation.return_value(GLib.Variant('(a{sv})', ({
+                'AvailableSourceTypes': GLib.Variant('u', self.source_types),
+                'AvailableCursorModes': GLib.Variant('u', self.cursor_modes)},)))
+            return
         if method == 'Close':
             invocation.return_value(None)
             return
@@ -116,14 +126,27 @@ class PortalTests(unittest.TestCase):
             old_fd = portal.fd
             select = next(args for method, args in self.calls if method == 'SelectSources')
             self.assertFalse(select[1]['multiple'])
+            self.assertEqual(select[1]['cursor_mode'], 2)
             self.assertNotIn('restore_token', select[1])
         finally:
             portal.close()
             portal.close()
         with self.assertRaises(OSError):
             os.fstat(old_fd)
-        self.assertEqual([c[0] for c in self.calls], ['CreateSession', 'SelectSources', 'Start', 'OpenPipeWireRemote', 'Close'])
+        self.assertEqual([c[0] for c in self.calls], ['CreateSession', 'GetAll', 'SelectSources', 'Start', 'OpenPipeWireRemote', 'Close'])
 
+
+    def test_monitor_only_backend_and_hidden_cursor_fallback_are_respected(self):
+        self.source_types = 1
+        self.cursor_modes = 1
+        portal = ScreenCastPortal(threading.Event())
+        try:
+            portal.open()
+            options = next(args[-1] for method, args in self.calls if method == 'SelectSources')
+            self.assertEqual(options['types'], 1)
+            self.assertNotIn('cursor_mode', options)
+        finally:
+            portal.close()
 
     def test_system_revocation_signals_cancellation_without_waiting_for_video_timeout(self):
         cancel = threading.Event()

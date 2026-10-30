@@ -33,6 +33,14 @@ class ReleaseTests(unittest.TestCase):
         jsonschema.Draft202012Validator.check_schema(schema)
         jsonschema.validate(manifest, schema)
 
+    def test_checksums_ignore_old_version_assets(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as folder:
+            dist = Path(folder)
+            (dist/'tv-wifi_0.0.1_all.deb').write_bytes(b'old')
+            (dist/'install.sh').write_bytes(b'current')
+            self.assertEqual([line.split()[1] for line in build_release.write_checksums(dist).splitlines()], ['install.sh'])
+
     def test_built_archives_include_common_engine_and_matching_checksums(self):
         result = subprocess.run([sys.executable, str(ROOT/'build_release.py')],
                                 capture_output=True, text=True, timeout=30,

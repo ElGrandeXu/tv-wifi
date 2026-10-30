@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import zipfile
 
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 ROOT = Path(__file__).resolve().parent
 
 
@@ -62,7 +62,9 @@ def build_deb(dist):
 
 
 def write_checksums(dist):
-    assets = sorted(p for p in dist.iterdir() if p.suffix in {'.zip', '.deb', '.dmg'} or p.name == 'install.sh')
+    names = {'TV-WiFi-Linux.zip', 'TV-WiFi-macOS.zip', 'TV-WiFi-macOS.dmg',
+             f'tv-wifi_{VERSION}_all.deb', 'install.sh'}
+    assets = sorted(p for p in dist.iterdir() if p.name in names)
     sums = ''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n' for p in assets)
     (dist/'SHA256SUMS').write_text(sums, encoding='ascii')
     return sums

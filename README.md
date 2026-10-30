@@ -10,11 +10,11 @@ La TV doit recevoir la vidéo **DLNA** sur le même réseau. Ce n’est pas un �
 
 ## Télécharger
 
-**[Version 1.1.0 : téléchargements et SHA256SUMS](https://github.com/ElGrandeXu/tv-wifi/releases/tag/v1.1.0)**
+**[Version 1.1.1 : téléchargements et SHA256SUMS](https://github.com/ElGrandeXu/tv-wifi/releases/tag/v1.1.1)**
 
 | Votre ordinateur | Paquet | Fonctionnement |
 | --- | --- | --- |
-| Ubuntu / Mint / Debian récents | `tv-wifi_1.1.0_all.deb` ou `TV-WiFi-Linux.zip` | X11 ; Wayland via portail ScreenCast/PipeWire. NVIDIA **facultative** : repli logiciel x264 sur Intel/AMD/NVIDIA. |
+| Ubuntu / Mint / Debian récents | `tv-wifi_1.1.1_all.deb` ou `TV-WiFi-Linux.zip` | X11 ; Wayland via portail ScreenCast/PipeWire. NVIDIA **facultative** : repli logiciel x264 sur Intel/AMD/NVIDIA. |
 | Mac Intel / Apple Silicon | `TV-WiFi-macOS.zip` ou `.dmg` | Python 3.11+ avec Tk et FFmpeg à préparer une fois ; capture AVFoundation, encodage VideoToolbox. |
 
 Sur Linux, ouvrez le `.deb` avec votre gestionnaire de paquets, ou décompressez le ZIP et lancez `Installer le raccourci.sh`. Sur Mac, ouvrez `Installer les prérequis.command`, puis **TV Wi-Fi.app**. Les paquets ne démarrent aucun partage. [Guide Linux](linux/README.md) · [Guide Mac](macos/README.txt).
